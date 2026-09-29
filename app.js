@@ -1,93 +1,48 @@
-const KEY="queenwang9_english_v1";
-const initial={day1:{done:true,score:6,total:6},day2:{done:false,score:0,total:3},errors:[],savedWords:[],lastPage:"home"};
-let state=JSON.parse(localStorage.getItem(KEY)||"null")||initial;
-function save(){localStorage.setItem(KEY,JSON.stringify(state))}
-function el(tag,cls,html){const x=document.createElement(tag);if(cls)x.className=cls;if(html!==undefined)x.innerHTML=html;return x}
-function speak(text){if("speechSynthesis" in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang="en-US";u.rate=.82;speechSynthesis.speak(u)}}
-function pct(a,b){return b?Math.round(a/b*100):0}
-function header(title,sub=""){return `<div class="top"><div class="eyebrow">王玉英语学习系统</div><div class="title">${title}</div><div class="sub">${sub}</div></div>`}
-function nav(active){return `<div class="nav"><div class="navin">
-<button class="${active==="home"?"active":""}" onclick="go('home')"><span>⌂</span>首页</button>
-<button class="${active==="courses"?"active":""}" onclick="go('courses')"><span>▣</span>课程</button>
-<button class="${active==="practice"?"active":""}" onclick="go('practice')"><span>✓</span>练习</button>
-<button class="${active==="review"?"active":""}" onclick="go('review')"><span>↻</span>复习</button>
-<button class="${active==="me"?"active":""}" onclick="go('me')"><span>◎</span>我的</button>
-</div></div>`}
-function render(html,active){document.getElementById("app").innerHTML=`<div class="app">${html}${nav(active)}</div>`;window.scrollTo(0,0)}
-function go(page){state.lastPage=page;save();if(page==="home")home();if(page==="courses")courses();if(page==="practice")practice();if(page==="review")review();if(page==="me")me()}
-function home(){
- const d=state.day1.done?1:0, d2=state.day2.done?1:0, total=d+d2, progress=total/2*100;
- render(header("今天学英语","主线课程从零基础开始，逐步走向 A1 → A2 → B1 → B2 → C1 → C2 → IELTS → Advanced English")+`
- <div class="content">
- <div class="card hero"><div class="eyebrow">今日学习</div><h2 style="margin:7px 0">Day ${state.day2.done? "—":"2"}</h2><div class="sub">一般现在时 + do / does + 发音入门</div><div class="progress"><div style="width:${state.day2.done?100:0}%"></div></div><div class="row"><span>${state.day2.done?"今日已完成":"下一课待学习"}</span><button class="btn secondary" onclick="startDay2()">开始</button></div></div>
- <div class="card"><div class="row"><b>Day 1 学习记录</b><span class="pill">6/6 · 100%</span></div><p class="muted">BE 动词：am / is / are，已完成。</p></div>
- <div class="card"><b>10 条能力线</b><div class="grid" style="margin-top:12px">${["发音","拼写","词汇","语法","听力","口语","阅读","写作","英语思维","语用与文化"].map(x=>`<div class="tile"><b>${x}</b><span class="muted">持续训练</span></div>`).join("")}</div></div>
- <div class="card"><b>学习进度</b><div class="progress"><div style="width:${progress}%"></div></div><div class="muted">基础课程完成度：${Math.round(progress)}%</div></div>
- </div>`,"home")
-}
-function courses(){
- render(header("课程","从零基础逐层推进，不跳级硬背。")+`<div class="content">
- <div class="card"><span class="pill">当前阶段</span><h2>Zero → A1 基础</h2><p class="muted">重点：句子结构、BE、一般现在时、发音、拼写、核心词汇。</p></div>
- ${["Day 1 · BE 动词基础","Day 2 · 一般现在时 + do/does + 发音"].map((x,i)=>`<div class="card"><div class="row"><b>${x}</b><span class="pill">${i===0?"已完成":"下一课"}</span></div><p class="muted">${i===0?"6/6，100%":"3 个课堂练习 + 发音与拼写训练"}</p><button class="btn ${i===0?"secondary":""}" onclick="${i===0?"showDay1()":"startDay2()"}">${i===0?"查看":"开始"}</button></div>`).join("")}
- <div class="card"><b>后续路线</b><p class="muted">A1 → A2 → B1 → B2 → C1 → C2 → IELTS → IELTS 8/8.5/9 → Advanced English</p></div>
- </div>`,"courses")
-}
-function showDay1(){
- render(header("Day 1","BE 动词基础 · 已完成 6/6"),`home`)
-}
-function startDay2(){
- const L=DAY2.lessons;
- render(header("Day 2","一般现在时 + do / does + 发音入门")+`<div class="content">
- ${L.map(x=>`<div class="card"><b>${x.title}</b><p>${x.text}</p></div>`).join("")}
- <div class="card"><b>今天的 5 个核心词</b>${DAY2.vocab.map(v=>`<p><b>${v[0]}</b> — ${v[1]}<br><span class="muted">${v[2]}</span> <button class="btn secondary small" onclick="speak('${v[2].replace(/'/g,"\\'")}')">🔊 听</button></p>`).join("")}</div>
- <button class="btn full" onclick="day2Quiz()">开始课堂练习</button>
- </div>`,"courses")
-}
-function day2Quiz(){
- state.qIndex=0;state.qCorrect=0;state.qDone=false;quizPage()
-}
-function quizPage(){
- const i=state.qIndex,q=DAY2.quiz[i];
- if(i>=DAY2.quiz.length){finishDay2();return}
- render(header("Day 2 · 课堂练习",`第 ${i+1} / ${DAY2.quiz.length} 题`)+`<div class="content"><div class="card"><b>${q.q}</b><div id="opts">${q.options.map((o,j)=>`<button class="option" onclick="answer(${j})">${o}</button>`).join("")}</div><div id="fb"></div></div></div>`,"practice")
-}
-function answer(j){
- const i=state.qIndex,q=DAY2.quiz[i],opts=[...document.querySelectorAll(".option")];
- opts.forEach(x=>x.disabled=true);opts[j].classList.add(j===q.answer?"correct":"wrong");if(j===q.answer)state.qCorrect++;
- if(j!==q.answer){state.errors.push({q:q.q,wrong:q.options[j],correct:q.options[q.answer],why:q.why})}
- document.getElementById("fb").innerHTML=`<div class="feedback"><b>${j===q.answer?"正确":"需要复习"}</b><br>${q.why}</div><button class="btn full" style="margin-top:10px" onclick="nextQ()">${i===DAY2.quiz.length-1?"查看结果":"下一题"}</button>`;
- save()
-}
-function nextQ(){state.qIndex++;save();quizPage()}
-function finishDay2(){
- const score=state.qCorrect,total=DAY2.quiz.length;
- state.day2={done:score===total,score,total};save();
- render(header("Day 2 · 练习结果","本次课堂练习已完成")+`<div class="content"><div class="card center"><div style="font-size:44px;font-weight:800">${score}/${total}</div><p class="${score===total?"success":"warning"}">${score===total?"全部正确":"有题目需要进入错题复习"}</p><p class="muted">系统已经记录你的练习结果。</p><button class="btn full" onclick="go('home')">回到首页</button></div></div>`,"practice")
-}
-function practice(){
- render(header("练习","课堂练习、发音、拼写和综合复习会逐步加入。")+`<div class="content">
- <div class="card"><b>Day 2 课堂练习</b><p class="muted">一般现在时 + do / does</p><button class="btn" onclick="day2Quiz()">开始</button></div>
- <div class="card"><b>发音训练</b><p class="muted">先从 /iː/、/ɪ/、/æ/、/ʌ/ 开始。</p><button class="btn secondary" onclick="pronunciation()">进入</button></div>
- <div class="card"><b>拼写训练</b><p class="muted">后续加入听音拼写、字母组合、易错拼写。</p></div>
- </div>`,"practice")
-}
-function pronunciation(){
- render(header("发音中心","音标不是孤立背诵，而是把符号、声音、单词和口腔动作连起来。")+`<div class="content">
- ${PRONUNCIATION.map(p=>`<div class="card"><div class="word">${p.symbol}</div><div class="ipa">${p.name}</div><p>${p.tip}</p><div>${p.examples.map(e=>`<button class="option" onclick="speak('${e[0]}')"><b>${e[0]}</b> — ${e[1]}　🔊</button>`).join("")}</div></div>`).join("")}
- </div>`,"practice")
-}
-function review(){
- render(header("复习","错题会进入复习区；后续会接入间隔重复算法。")+`<div class="content">
- <div class="card"><div class="row"><b>待复习错题</b><span class="pill">${state.errors.length}</span></div>${state.errors.length?`<ol class="list">${state.errors.map(e=>`<li style="margin:10px 0"><b>${e.q}</b><br>你的答案：${e.wrong}<br>正确答案：${e.correct}<br><span class="muted">${e.why}</span></li>`).join("")}</ol>`:`<p class="success">目前没有错题。</p>`}</div>
- <div class="card"><b>间隔复习计划</b><p class="muted">V1 先保存错题；后续版本会按遗忘曲线自动安排：当天 → 次日 → 3天 → 7天 → 14天……</p></div>
- </div>`,"review")
-}
-function me(){
- render(header("我的学习","数据保存在当前浏览器中。")+`<div class="content">
- <div class="card"><b>学习记录</b><p>Day 1：${state.day1.score}/${state.day1.total}</p><p>Day 2：${state.day2.score}/${state.day2.total}</p><p>错题：${state.errors.length}</p></div>
- <div class="card"><b>每日总结</b><p class="muted">今天记住这 3 件事：① do/does 是一般现在时的重要工具；② does 后面的实义动词用原形；③ 发音训练从实际声音入手，不是死背音标。</p></div>
- <div class="card"><b>长期目标</b><p class="muted">从零基础建立完整英语能力体系，之后进入 IELTS 与 Advanced English。IELTS 分数是测量工具，不是学习终点。</p></div>
- </div>`,"me")
-}
-if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("./sw.js").catch(()=>{});
-go("home");
+(()=>{
+const $=s=>document.querySelector(s),A='/';const KEY='english_home_v11_state';
+let S=JSON.parse(localStorage.getItem(KEY)||'null')||{done:{},fav:[],errors:[],q:0,c:0,route:'home',id:null,type:null,rate:1};
+const save=()=>localStorage.setItem(KEY,JSON.stringify(S));
+const esc=x=>String(x).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+function say(t){if(!speechSynthesis)return alert('当前浏览器不支持网页朗读');speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=S.rate;speechSynthesis.speak(u)}
+window.say=say;
+function go(r,id,type){S.route=r;S.id=id||null;S.type=type||null;save();render();scrollTo(0,0)}window.go=go;
+function done(id){S.done[id]=true;save()}window.done=done;
+function top(title,back=true){return `<div class="top">${back?'<button class="back" onclick="go(\'home\')">‹ 返回</button>':''}<div class="brand">${esc(title)}</div><button class="gear" onclick="go('settings')">⚙</button></div>`}
+function nav(active){let n=[['home','⌂','首页'],['today','◷','今日'],['courses','▤','课程'],['practice','✓','练习'],['me','●','我的']];return `<div class="bottom"><div class="bottomin">${n.map(x=>`<button class="${active==x[0]?'on':''}" onclick="go('${x[0]}')"><span class="ico">${x[1]}</span>${x[2]}</button>`).join('')}</div></div>`}
+function shell(body,active){$('#app').innerHTML=`<div class="shell">${body}${nav(active)}</div>`}
+function render(){let r=S.route;({home:home,today:today,courses:courses,practice:practice,review:review,me:me,settings:settings,search:search,history:history,summary:summary,skill:skill,lesson:lesson,course:course}[r]||home)()}
+function home(){let skills=[['grammar','📘','Grammar','语法'],['pronunciation','🔊','Pronunciation','发音'],['spelling','✍️','Spelling','拼写'],['vocabulary','🧠','Vocabulary','词汇'],['listening','🎧','Listening','听力'],['speaking','🗣️','Speaking','口语'],['reading','📖','Reading','阅读'],['writing','📝','Writing','写作'],['thinking','💭','English Thinking','英语思维'],['pragmatics','🌍','Pragmatics & Culture','语用与文化']];shell(`<div class="page"><div class="hero"><h1>英语之家 English Home</h1><p>从零基础建立真正能使用的英语。</p><div style="margin-top:16px;font-size:28px;font-weight:800">${Object.keys(S.done).length}</div><div>已完成学习项</div></div><div class="grid"><div class="card"><div class="small">当前阶段</div><div class="stat">Pre-A1</div></div><div class="card"><div class="small">练习正确率</div><div class="stat">${pct(S.c,S.q)}%</div></div></div><div class="title">继续学习</div><div class="card"><h3>Day 2：一般现在时</h3><p>do / does、一般现在时、发音和拼写。</p><button class="btn full" onclick="go('course','d2')">继续 Day 2</button></div><div class="title">10条能力线</div><div class="grid">${skills.map(x=>`<div class="card"><div style="font-size:25px">${x[1]}</div><h3>${x[2]}</h3><p>${x[3]}</p><button class="btn secondary full" onclick="go('skill','${x[0]}')">进入</button></div>`).join('')}</div></div>`,'home')}
+function today(){let t=[['grammar','g2','📘','语法'],['vocabulary','v1','🧠','词汇'],['pronunciation','p1','🔊','发音'],['spelling','s1','✍️','拼写'],['listening','l1','🎧','听力'],['speaking','sp1','🗣️','口语'],['reading','r1','📖','阅读'],['writing','w1','📝','写作'],['thinking','t1','💭','英语思维'],['pragmatics','pr1','🌍','语用与文化']];let n=t.filter(x=>S.done[x[1]]).length;shell(`${top('今日学习',false)}<div class="page"><div class="hero"><h1>Today</h1><p>今天完成 ${n}/${t.length}</p><div class="bar" style="margin-top:12px;background:#374151"><span style="width:${pct(n,t.length)}%;background:#fff"></span></div></div><div class="list">${t.map((x,i)=>`<button class="item" onclick="go('lesson','${x[1]}','${x[0]}')"><div class="num">${S.done[x[1]]?'✓':i+1}</div><div class="grow"><b>${x[3]}</b><div class="small">${x[0]}</div></div><span>${S.done[x[1]]?'已完成':'开始 →'}</span></button>`).join('')}</div><button class="btn full" onclick="go('practice')">完成后做综合练习</button></div>`,'today')}
+function courses(){shell(`${top('课程',false)}<div class="page"><div class="hero"><h1>Course Path</h1><p>Pre-A1 → A1 → A2 → B1 → B2 → C1/C2</p></div><div class="list">${COURSE.map(c=>`<button class="item" onclick="go('course','${c.id}')"><div class="num">${c.day}</div><div class="grow"><b>${c.title}</b><div class="small">${c.level} · ${c.time}</div><div class="small">${c.summary}</div></div><span>${S.done[c.id]?'✓':'→'}</span></button>`).join('')}</div><div class="notice">后续等级会逐步补充。不要跳过基础阶段。</div></div>`,'courses')}
+function course(){let c=COURSE.find(x=>x.id===S.id)||COURSE[1];let arr=[];(c.grammar||[]).forEach(id=>arr.push(['grammar',id,'📘','语法',GRAMMAR.find(x=>x.id===id)?.title]));(c.vocab||[]).forEach(id=>{let x=VOCABULARY.find(x=>x[0]===id);arr.push(['vocabulary',id,'🧠','词汇',x?.[1]])});(c.pron||[]).forEach(id=>arr.push(['pronunciation',id,'🔊','发音',PRONUNCIATION.find(x=>x.id===id)?.title]));(c.spell||[]).forEach(id=>arr.push(['spelling',id,'✍️','拼写','拼写练习']));shell(`${top(c.title)}<div class="page"><div class="card"><span class="tag">${c.level}</span><span class="tag">${c.time}</span><h2 style="margin-top:9px">${c.title}</h2><p>${c.summary}</p></div><div class="title">课程内容</div><div class="list">${arr.map(x=>`<button class="item" onclick="go('lesson','${x[1]}','${x[0]}')"><div class="num">${x[2]}</div><div class="grow"><b>${esc(x[4])}</b><div class="small">${x[3]}</div></div><span>→</span></button>`).join('')}</div><button class="btn full" onclick="go('practice')">课程综合练习</button></div>`,'courses')}
+function skill(){let type=S.id;let map={grammar:['📘','Grammar','语法',GRAMMAR],pronunciation:['🔊','Pronunciation','发音',PRONUNCIATION],spelling:['✍️','Spelling','拼写',SPELLING],vocabulary:['🧠','Vocabulary','词汇',VOCABULARY],listening:['🎧','Listening','听力',LISTENING],speaking:['🗣️','Speaking','口语',SPEAKING],reading:['📖','Reading','阅读',READING],writing:['📝','Writing','写作',WRITING],thinking:['💭','English Thinking','英语思维',THINKING],pragmatics:['🌍','Pragmatics & Culture','语用与文化',PRAGMATICS]};let m=map[type];let d=m[3];shell(`${top(m[1])}<div class="page"><div class="hero"><h1>${m[0]} ${m[1]}</h1><p>${m[2]} · 点击每一项开始。</p></div><div class="list">${d.map((x,i)=>{let id=type==='vocabulary'?x[0]:x.id||x[0];let title=type==='vocabulary'?x[1]:(x.title||x.prompt||'练习');let sub=type==='vocabulary'?x[2]:(x.ipa||x.explain||x.goal||'点击进入');return `<button class="item" onclick="go('lesson','${id}','${type}')"><div class="num">${S.done[id]?'✓':i+1}</div><div class="grow"><b>${esc(title)}</b><div class="small">${esc(sub)}</div></div><span>→</span></button>`}).join('')}</div></div>`,'today')}
+function lesson(){let t=S.type,id=S.id;let d=t==='grammar'?GRAMMAR.find(x=>x.id===id):t==='pronunciation'?PRONUNCIATION.find(x=>x.id===id):t==='spelling'?SPELLING.find(x=>x.id===id):t==='vocabulary'?VOCABULARY.find(x=>x[0]===id):t==='listening'?LISTENING.find(x=>x[0]===id):t==='speaking'?SPEAKING.find(x=>x[0]===id):t==='reading'?READING.find(x=>x[0]===id):t==='writing'?WRITING.find(x=>x[0]===id):t==='thinking'?THINKING.find(x=>x[0]===id):PRAGMATICS.find(x=>x[0]===id);if(t==='grammar')return grammar(d);if(t==='pronunciation')return pron(d);if(t==='spelling')return spelling(d);if(t==='vocabulary')return vocab(d);if(t==='listening')return listening(d);if(t==='speaking')return speaking(d);if(t==='reading')return reading(d);if(t==='writing')return writing(d);if(t==='thinking')return choice(d,'English Thinking','thinking');return choice(d,'Pragmatics & Culture','prag')}
+function grammar(g){shell(`${top(g.title)}<div class="page"><div class="card"><span class="tag">${g.level}</span><p>${g.explain}</p></div><div class="title">核心搭配</div><div class="card">${g.rules.map(r=>`<div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e5e7eb;padding:9px 0"><b>${r[0]}</b><span>${r[1]}</span></div>`).join('')}</div><div class="title">例句</div>${g.examples.map(e=>`<div class="card"><div class="row"><b>${e[0]}</b><button class="speak" onclick="say('${e[0].replace(/'/g,"\\'")}')">🔊</button></div><p>${e[1]}</p></div>`).join('')}<div class="title">马上练</div>${g.quiz.map((q,i)=>quiz(q,`g-${g.id}-${i}`)).join('')}<button class="btn full" onclick="finish('${g.id}')">完成本节</button></div>`,'today')}
+function quiz(q,key){return `<div class="card"><div class="q">${esc(q[0])}</div>${q[1].map(o=>`<button class="option" onclick="mc(this,'${encodeURIComponent(q[2])}','${encodeURIComponent(q[3])}','${key}')">${esc(o)}</button>`).join('')}<div id="r-${key}"></div></div>`}
+window.mc=(b,a,w,k)=>{let ans=decodeURIComponent(a),why=decodeURIComponent(w),ok=b.textContent.trim()===ans;b.parentElement.querySelectorAll('.option').forEach(x=>x.disabled=true);S.q++;if(ok)S.c++;$('#r-'+k).innerHTML=ok?`<div class="success">✓ 正确。${why}</div>`:`<div class="error">✗ 正确答案：<b>${esc(ans)}</b><br>${why}</div>`;if(!ok)S.errors.unshift({q:b.parentElement.querySelector('.q').textContent,a:ans,y:why});save()}
+function pron(p){shell(`${top(p.title)}<div class="page"><div class="card"><div class="ipa">${p.ipa}</div><p>${p.tip}</p><button class="btn" onclick="say('${p.words[0][0]}')">🔊 听例词</button></div><div class="title">例词</div><div class="grid">${p.words.map(w=>`<div class="card"><div class="row"><b>${w[0]}</b><button class="speak" onclick="say('${w[0]}')">🔊</button></div><p>${w[1]}</p></div>`).join('')}</div><div class="notice">${p.compare}</div><button class="btn full" onclick="finish('${p.id}')">完成发音练习</button></div>`,'today')}
+function spelling(s){shell(`${top('Spelling 拼写')}<div class="page"><div class="card"><h2>${s.prompt}</h2><input id="ans" class="input" autocomplete="off" autocapitalize="none" placeholder="输入英文拼写"><button class="btn full" onclick="checkSpell('${s.id}')">检查</button><div id="out"></div></div><div class="notice">提示：${s.hint}</div></div>`,'today')}
+window.checkSpell=id=>{let s=SPELLING.find(x=>x.id===id),v=$('#ans').value.trim().toLowerCase();S.q++;if(v===s.answer){S.c++;done(id);$('#out').innerHTML=`<div class="success">✓ 正确：${s.answer}<br>${s.sentence}</div>`}else{$('#out').innerHTML=`<div class="error">✗ 正确答案：<b>${s.answer}</b></div>`;S.errors.unshift({q:s.prompt,a:s.answer,y:'检查字母顺序和重复字母。',u:v})}save()}
+function vocab(v){shell(`${top(v[1])}<div class="page"><div class="card"><div class="row"><h1 style="margin:0">${v[1]}</h1><button class="speak" onclick="say('${v[1]}')">🔊</button></div><div class="ipa">${v[3]}</div><p><b>${v[2]}</b> · ${v[4]}</p></div><div class="title">怎么用</div><div class="card"><p>${v[7]}</p></div><div class="title">例句</div><div class="card"><div class="row"><b>${v[5]}</b><button class="speak" onclick="say('${v[5]}')">🔊</button></div><p>${v[6]}</p></div><button class="btn full" onclick="fav('${v[0]}')">${S.fav.includes(v[0])?'★ 已收藏':'☆ 收藏这个词'}</button><button class="btn secondary full" onclick="finish('${v[0]}')">完成这个词</button></div>`,'today')}
+window.fav=id=>{S.fav=S.fav.includes(id)?S.fav.filter(x=>x!==id):S.fav.concat(id);save();render()};
+function listening(x){shell(`${top('Listening 听力')}<div class="page"><div class="card"><h2>先听，再选</h2><button class="btn" onclick="say('${x[1]}')">🔊 播放句子</button><p>${x[3]}</p></div>${x[2].map(o=>`<button class="option" onclick="listenAns(this,'${encodeURIComponent(x[1])}','${x[0]}')">${o}</button>`).join('')}<div id="lr"></div></div>`,'today')}
+window.listenAns=(b,a,id)=>{let ans=decodeURIComponent(a),ok=b.textContent.trim()===ans;document.querySelectorAll('.option').forEach(x=>x.disabled=true);S.q++;if(ok)S.c++;$('#lr').innerHTML=ok?'<div class="success">✓ 正确。</div>':`<div class="error">✗ 正确答案：${ans}</div>`;done(id);save()}
+function speaking(x){shell(`${top('Speaking 口语')}<div class="page"><div class="card"><h2>${x[1]}</h2><p>${x[3]}</p></div>${x[2].map((l,i)=>`<div class="card"><div class="row"><b>${i+1}. ${l}</b><button class="speak" onclick="say('${l}')">🔊</button></div></div>`).join('')}<div class="notice">第一版先做“听 → 跟读 → 自己说”。以后再加入麦克风与 AI 反馈。</div><button class="btn full" onclick="finish('${x[0]}')">我已完成跟读</button></div>`,'today')}
+function reading(x){shell(`${top('Reading 阅读')}<div class="page"><div class="card"><h2>${x[1]}</h2><p style="font-size:17px;line-height:1.9">${x[2]}</p><button class="btn secondary" onclick="say('${x[2]}')">🔊 听全文</button></div>${x[3].map((q,i)=>quiz([q[0],q[1],q[2],q[2]],`r-${x[0]}-${i}`)).join('')}<button class="btn full" onclick="finish('${x[0]}')">完成阅读</button></div>`,'today')}
+function writing(x){shell(`${top('Writing 写作')}<div class="page"><div class="card"><h2>${x[1]}</h2><p>${x[2]}</p></div><textarea id="w" class="input" style="min-height:160px" placeholder="在这里写英文……"></textarea><button class="btn full" onclick="writeCheck('${x[0]}')">检查</button><div id="wo"></div></div>`,'today')}
+window.writeCheck=id=>{let x=WRITING.find(a=>a[0]===id),v=$('#w').value.trim();if(!v){$('#wo').innerHTML='<div class="notice">先写一点内容。</div>';return}done(id);$('#wo').innerHTML=`<div class="success">已记录。参考表达：<br><b>${x[3]}</b></div>`;save()}
+function choice(x,title,key){shell(`${top(title)}<div class="page"><div class="card"><h2>${x[1]}</h2><p>${x[2]}</p></div>${x[3].map(o=>`<button class="option" onclick="choiceAns(this,'${encodeURIComponent(x[4])}','${encodeURIComponent(x[5])}','${x[0]}')">${o}</button>`).join('')}<div id="co"></div></div>`,'today')}
+window.choiceAns=(b,a,w,id)=>{let ans=decodeURIComponent(a),why=decodeURIComponent(w),ok=b.textContent.trim()===ans;document.querySelectorAll('.option').forEach(x=>x.disabled=true);S.q++;if(ok)S.c++;$('#co').innerHTML=ok?`<div class="success">✓ ${why}</div>`:`<div class="error">✗ 正确答案：${ans}<br>${why}</div>`;if(!ok)S.errors.unshift({q:'选择题',a:ans,y:why,u:b.textContent.trim()});done(id);save()}
+function practice(){let qs=[];GRAMMAR.forEach(g=>g.quiz.forEach((q,i)=>qs.push([q[0],q[1],q[2],q[3]])));qs=qs.slice(0,6);shell(`${top('综合练习',false)}<div class="page"><div class="hero"><h1>Practice</h1><p>混合语法训练。做错的会进入复习。</p></div>${qs.map((q,i)=>quiz(q,'p'+i)).join('')}<button class="btn full" onclick="go('summary')">查看今日总结</button></div>`,'practice')}
+function review(){shell(`${top('复习',false)}<div class="page"><div class="hero"><h1>Review</h1><p>错题会自动保存到这里。</p></div><div class="grid"><div class="card"><div class="small">错题</div><div class="stat">${S.errors.length}</div></div><div class="card"><div class="small">收藏词汇</div><div class="stat">${S.fav.length}</div></div></div>${S.errors.length?S.errors.slice(0,30).map(e=>`<div class="card"><b>${esc(e.q)}</b><p>正确答案：${esc(e.a)}</p><p>${esc(e.y||'')}</p></div>`).join(''):'<div class="card"><p>还没有错题。</p></div>'}</div>`,'practice')}
+function me(){shell(`${top('我的',false)}<div class="page"><div class="hero"><h1>My Learning</h1><p>当前设备上的学习记录。</p></div><div class="grid"><div class="card"><div class="small">完成项</div><div class="stat">${Object.keys(S.done).length}</div></div><div class="card"><div class="small">练习题</div><div class="stat">${S.q}</div></div><div class="card"><div class="small">正确率</div><div class="stat">${pct(S.c,S.q)}%</div></div><div class="card"><div class="small">错题</div><div class="stat">${S.errors.length}</div></div></div><div class="title">工具</div><div class="list"><button class="item" onclick="go('review')"><div class="num">↻</div><div class="grow"><b>复习 / Review</b><div class="small">错题与收藏</div></div><span>→</span></button><button class="item" onclick="go('summary')"><div class="num">▣</div><div class="grow"><b>今日总结</b><div class="small">适合抄进实体笔记本</div></div><span>→</span></button><button class="item" onclick="go('search')"><div class="num">⌕</div><div class="grow"><b>搜索</b><div class="small">搜索词汇和语法</div></div><span>→</span></button><button class="item" onclick="go('settings')"><div class="num">⚙</div><div class="grow"><b>设置</b><div class="small">朗读速度与数据</div></div><span>→</span></button></div></div>`,'me')}
+function settings(){shell(`${top('设置')}<div class="page"><div class="card"><h2>学习设置</h2><div class="row" style="justify-content:space-between;padding:10px 0"><b>朗读速度</b><select onchange="rate(this.value)"><option value="0.75" ${S.rate==.75?'selected':''}>0.75×</option><option value="1" ${S.rate==1?'selected':''}>1×</option><option value="1.25" ${S.rate==1.25?'selected':''}>1.25×</option></select></div></div><div class="card"><h2>数据</h2><p>当前学习记录保存在手机浏览器本机。清除网站数据可能导致记录消失。</p><button class="btn danger full" onclick="resetAll()">清空学习数据</button></div></div>`,'me')}
+window.rate=v=>{S.rate=+v;save()};window.resetAll=()=>{if(confirm('确定清空当前设备上的学习数据吗？')){localStorage.removeItem(KEY);location.reload()}};
+function search(){shell(`${top('搜索')}<div class="page"><div class="card"><input class="input" placeholder="搜索 want / do / sheep..." oninput="find(this.value)"></div><div id="res"></div></div>`,'me')}
+window.find=q=>{q=q.toLowerCase().trim();if(!q)return $('#res').innerHTML='';let r=[];VOCABULARY.forEach(x=>{if((x[1]+x[2]+x[5]).toLowerCase().includes(q))r.push(['vocabulary',x[0],x[1],x[2]])});GRAMMAR.forEach(x=>{if((x.title+x.explain).toLowerCase().includes(q))r.push(['grammar',x.id,x.title,x.explain])});$('#res').innerHTML=r.length?r.map(x=>`<button class="item" style="margin-top:9px" onclick="go('lesson','${x[1]}','${x[0]}')"><div class="num">⌕</div><div class="grow"><b>${esc(x[2])}</b><div class="small">${esc(x[3])}</div></div><span>→</span></button>`).join(''):'<div class="card" style="margin-top:10px"><p>没有找到。</p></div>'}
+function summary(){shell(`${top('今日总结')}<div class="page"><div class="hero"><h1>Daily Summary</h1><p>把下面内容抄到实体笔记本。</p></div><div class="card"><h2>今日数据</h2><p>完成学习项：${Object.keys(S.done).length}</p><p>练习：${S.q} · 正确：${S.c} · 正确率：${pct(S.c,S.q)}%</p></div><div class="card"><h2>Day 2 核心笔记</h2><p><b>一般现在时：</b>I/you/we/they + 动词原形；he/she/it + 动词-s。</p><p><b>do / does：</b>Do you like coffee? / Does she like coffee?</p><p><b>关键：</b>does 已经承担第三人称单数标记，所以说 Does she <b>like</b> coffee?</p><p><b>发音：</b>/iː/ sheep；/ɪ/ ship。</p></div><div class="card"><h2>明天</h2><p>先复习 do / does，再继续 Day 3。</p></div></div>`,'today')}
+function history(){shell(`${top('学习记录')}<div class="page"><div class="card"><p>目前 V1.1 先记录本机完成状态；后续版本会加入按日期的完整学习历史。</p></div></div>`,'me')}
+function finish(id){done(id);go('today')}
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));render();
+})();

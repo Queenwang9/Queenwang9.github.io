@@ -1,1 +1,0 @@
-const C="english-home-real-v2";self.addEventListener("install",e=>self.skipWaiting());self.addEventListener("activate",e=>e.waitUntil(clients.claim()));

@@ -1,0 +1,1 @@
+window.REVIEW_INTERVALS = [0,1,3,7,14,30];
